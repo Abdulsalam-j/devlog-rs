@@ -18,6 +18,8 @@ pub struct Config {
     pub llm: Llm,
     #[serde(default)]
     pub export: Export,
+    #[serde(default)]
+    pub drive: Drive,
 }
 
 #[derive(Debug, Deserialize)]
@@ -63,6 +65,16 @@ pub struct Export {
     pub frequency: Option<String>,
     #[serde(default)]
     pub format: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Drive {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default = "default_drive_remote")]
+    pub remote: String,
+    #[serde(default = "default_drive_folder")]
+    pub folder: String,
 }
 
 impl Config {
@@ -209,6 +221,24 @@ impl Default for Export {
             format: Some(default_export_format()),
         }
     }
+}
+
+impl Default for Drive {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            remote: default_drive_remote(),
+            folder: default_drive_folder(),
+        }
+    }
+}
+
+fn default_drive_remote() -> String {
+    "gdrive".into()
+}
+
+fn default_drive_folder() -> String {
+    "DevLog".into()
 }
 
 fn validate_export(export: &Export) -> Result<()> {
