@@ -9,8 +9,6 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Deserialize)]
 pub struct Config {
     #[serde(default)]
-    pub general: General,
-    #[serde(default)]
     pub daily: Daily,
     #[serde(default)]
     pub git: Git,
@@ -20,15 +18,6 @@ pub struct Config {
     pub export: Export,
     #[serde(default)]
     pub drive: Drive,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct General {
-    #[serde(default)]
-    #[allow(dead_code)]
-    pub timezone: Option<String>,
-    #[serde(default = "default_working_days")]
-    pub working_days: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -106,7 +95,6 @@ impl Config {
             bail!("git.repo_path is required and cannot be empty");
         }
 
-        validate_working_days(&self.general.working_days)?;
         validate_output_dir(&self.daily.output_dir)?;
         validate_repo_path(&self.git.repo_path)?;
 
@@ -118,22 +106,12 @@ impl Config {
             validate_export(&self.export)?;
         }
 
-        self.timezone()?; // validate timezone string if provided
         Ok(())
     }
 
+    /// Returns timezone from TZ env var, or defaults to UTC.
     pub fn timezone(&self) -> Result<Tz> {
-        let tz_str = if let Some(tz) = &self.general.timezone {
-            tz.clone()
-        } else if let Ok(env_tz) = env::var("TZ") {
-            env_tz
-        } else {
-            bail!(
-                "general.timezone is required. Set it to an IANA timezone like 'Asia/Amman' \
-or set the TZ environment variable."
-            );
-        };
-
+        let tz_str = env::var("TZ").unwrap_or_else(|_| "UTC".into());
         tz_str.parse::<Tz>().with_context(|| {
             format!("invalid timezone: {tz_str} (use an IANA identifier like 'Asia/Amman')")
         })
@@ -154,16 +132,6 @@ fn resolve_candidate_paths(explicit: Option<PathBuf>) -> Result<Vec<PathBuf>> {
     Ok(paths)
 }
 
-fn default_working_days() -> Vec<String> {
-    vec![
-        "Mon".into(),
-        "Tue".into(),
-        "Wed".into(),
-        "Thu".into(),
-        "Fri".into(),
-    ]
-}
-
 fn default_output_dir() -> String {
     "./DevLog".into()
 }
@@ -174,15 +142,6 @@ fn default_model() -> String {
 
 fn default_use_emoji() -> bool {
     true
-}
-
-impl Default for General {
-    fn default() -> Self {
-        Self {
-            timezone: None,
-            working_days: default_working_days(),
-        }
-    }
 }
 
 impl Default for Daily {
@@ -271,16 +230,6 @@ fn default_export_format() -> String {
 
 const DEFAULT_EXPORT_FREQUENCY: &str = "monthly";
 const DEFAULT_EXPORT_FORMAT: &str = "md";
-
-fn validate_working_days(days: &[String]) -> Result<()> {
-    for day in days {
-        match day.as_str() {
-            "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun" => {}
-            other => bail!("general.working_days contains invalid value: {other}"),
-        }
-    }
-    Ok(())
-}
 
 fn validate_output_dir(dir: &str) -> Result<()> {
     if dir.trim().is_empty() {
