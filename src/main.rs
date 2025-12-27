@@ -17,7 +17,7 @@ use std::path::PathBuf;
     long_about = "DevLog - Local-first developer log CLI
 
 Generates a daily work log from your git commits, summarizes them using an LLM,
-exports to PDF, and uploads to Google Drive.
+and uploads to Google Drive.
 
 QUICK START:
   1. Create a devlog.toml config file (see README)
@@ -25,7 +25,6 @@ QUICK START:
   3. Run: devlog log
 
 REQUIREMENTS:
-  - pandoc (for PDF export)
   - rclone (for Google Drive upload)
   - ollama (optional, for LLM summaries)"
 )]
@@ -40,7 +39,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Generate today's devlog, export to PDF, and upload to Google Drive
+    /// Generate today's devlog and upload to Google Drive
     Log,
 }
 
@@ -55,9 +54,9 @@ fn main() -> Result<()> {
             // Step 1: Generate today's entry
             let yearly_file = daily::run(&config, tz)?;
 
-            // Step 2: Upload the yearly file to Google Drive
-            if config.drive.enabled {
-                upload::to_drive(&config.drive, &yearly_file)?;
+            // Step 2: Upload the yearly file to Google Drive (only if entry was written)
+            if config.drive.enabled && !yearly_file.as_os_str().is_empty() {
+                upload::to_drive(&config.drive, yearly_file.as_path())?;
             }
         }
     }

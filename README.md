@@ -70,7 +70,6 @@ cp devlog.toml ./devlog.toml
 ```toml
 [daily]
 output_dir = "/Users/YOUR_USERNAME/Documents/Obsidian Vault"
-overwrite_existing = true
 
 [git]
 repo_path = "/path/to/your/git/repo"
@@ -170,7 +169,6 @@ The tool looks for `devlog.toml` in this order:
 ```toml
 [daily]
 output_dir = "/path/to/your/notes"  # Where to save DevLog-YYYY.md files
-overwrite_existing = true            # Replace today's entry if it exists
 ```
 
 #### `[git]` - Git Repository
@@ -222,7 +220,7 @@ devlog log
 
 If you run `devlog log` multiple times in one day:
 - First run: Creates entry
-- Subsequent runs: Replaces today's entry (if `overwrite_existing = true`)
+- Subsequent runs: Skips if today's entry already exists
 
 ### Example 3: No Commits Today
 

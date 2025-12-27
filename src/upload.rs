@@ -1,11 +1,11 @@
 use crate::config::Drive;
 use anyhow::{bail, Context, Result};
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::Command;
 
 /// Uploads a file to Google Drive using rclone.
 /// File should already be named DevLog-YYYY.md
-pub fn to_drive(config: &Drive, file_path: &PathBuf) -> Result<()> {
+pub fn to_drive(config: &Drive, file_path: &Path) -> Result<()> {
     let destination = format!("{}:{}", config.remote, config.folder);
 
     let filename = file_path

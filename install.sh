@@ -38,4 +38,3 @@ else
     echo "   Add this to your ~/.zshrc or ~/.bashrc:"
     echo "   export PATH=\"\$HOME/.cargo/bin:\$PATH\""
 fi
-

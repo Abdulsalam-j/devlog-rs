@@ -22,8 +22,6 @@ pub struct Config {
 pub struct Daily {
     #[serde(default = "default_output_dir")]
     pub output_dir: String,
-    #[serde(default)]
-    pub overwrite_existing: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -133,7 +131,6 @@ impl Default for Daily {
     fn default() -> Self {
         Self {
             output_dir: default_output_dir(),
-            overwrite_existing: false,
         }
     }
 }
