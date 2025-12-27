@@ -89,7 +89,7 @@ fn write_entry<W: Write>(
     writeln!(writer, "## [[{date}]]\n")?;
     writeln!(writer, "🛠️ **Summary**\n{summary}\n")?;
     if commits.is_empty() {
-        writeln!(writer, "🛑 **Commits**  \nNo commits for this day.\n")?;
+        writeln!(writer, "🛑 **Commits**\nNo commits for this day.\n")?;
     } else {
         writeln!(writer, "📦 **Commits**")?;
         for commit in commits {
