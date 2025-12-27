@@ -15,7 +15,7 @@ pub fn write_daily_entry(
     let dir = PathBuf::from(&path);
     fs::create_dir_all(&dir).with_context(|| format!("failed to create {}", dir.display()))?;
 
-    let file_path = dir.join(format!("{}.md", date.year()));
+    let file_path = dir.join(format!("DevLog-{}.md", date.year()));
     let file_exists = file_path.exists();
 
     if !config.overwrite_existing && entry_exists(&file_path, date)? {
@@ -51,7 +51,9 @@ fn entry_exists(path: &PathBuf, date: NaiveDate) -> Result<bool> {
         .open(path)
         .and_then(|mut f| f.read_to_string(&mut contents))
         .with_context(|| format!("failed to read {}", path.display()))?;
-    Ok(contents.contains(&format!("## [[{date}]]")))
+    // Check for both old format [[date]] and new format ## [[date]]
+    let date_str = format!("{date}");
+    Ok(contents.contains(&format!("[[{date_str}]]")))
 }
 
 fn write_year_header<W: Write>(mut writer: W, date: NaiveDate) -> Result<()> {
@@ -81,14 +83,43 @@ fn remove_entry(path: &PathBuf, date: NaiveDate) -> Result<()> {
         .and_then(|mut f| f.read_to_string(&mut contents))
         .with_context(|| format!("failed to read {}", path.display()))?;
 
-    let header = format!("## [[{date}]]");
-    if let Some(start) = contents.find(&header) {
-        // find the start of the next entry or end of file
-        let rest = &contents[start + header.len()..];
-        let next_idx = rest.find("## [[").map(|idx| start + header.len() + idx);
+    let date_str = format!("{date}");
+    // Try new format first: ## [[date]]
+    let new_format = format!("## [[{date_str}]]");
+    let old_format = format!("[[{date_str}]]");
+    
+    let start = contents.find(&new_format)
+        .or_else(|| contents.find(&old_format));
+    
+    if let Some(start) = start {
+        // Find the end: look for next entry (either format) or end of file
+        let search_start = if contents[start..].starts_with("##") {
+            start + new_format.len()
+        } else {
+            start + old_format.len()
+        };
+        
+        let rest = &contents[search_start..];
+        // Look for next entry in either format
+        let next_new = rest.find("## [[");
+        let next_old = rest.find("\n[[");
+        let next_idx = match (next_new, next_old) {
+            (Some(a), Some(b)) => Some(search_start + a.min(b)),
+            (Some(a), None) => Some(search_start + a),
+            (None, Some(b)) => Some(search_start + b),
+            (None, None) => None,
+        };
+        
         let end = next_idx.unwrap_or_else(|| contents.len());
-
-        contents.replace_range(start..end, "");
+        
+        // Remove the entry (including leading newline if present)
+        let remove_start = if start > 0 && contents.as_bytes()[start - 1] == b'\n' {
+            start - 1
+        } else {
+            start
+        };
+        
+        contents.replace_range(remove_start..end, "");
 
         // Rewrite file with truncated contents
         fs::write(path, contents)
