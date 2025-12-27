@@ -37,6 +37,7 @@ Avoid buzzwords. Do not invent work. Use at most one emoji{}.\n\n{}",
     let body = OllamaRequest {
         model: &config.model,
         prompt: &prompt,
+        stream: false,
     };
 
     let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
@@ -61,6 +62,7 @@ fn default_summary(commits: &[String]) -> String {
 struct OllamaRequest<'a> {
     model: &'a str,
     prompt: &'a str,
+    stream: bool,
 }
 
 #[derive(serde::Deserialize)]
