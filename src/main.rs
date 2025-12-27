@@ -54,14 +54,11 @@ fn main() -> Result<()> {
     match cli.command {
         Commands::Log => {
             // Step 1: Generate today's entry
-            daily::run(&config, tz)?;
+            let yearly_file = daily::run(&config, tz)?;
 
-            // Step 2: Export to PDF
-            if let Some(pdf_path) = export::run(&config, tz)? {
-                // Step 3: Upload to Google Drive
-                if config.drive.enabled {
-                    upload::to_drive(&config.drive, &pdf_path)?;
-                }
+            // Step 2: Upload the yearly file to Google Drive
+            if config.drive.enabled {
+                upload::to_drive(&config.drive, &yearly_file)?;
             }
         }
     }
