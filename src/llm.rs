@@ -49,11 +49,15 @@ Be factual and direct. Use at most one emoji{}.\n\n{}",
         .send()?
         .json()?;
 
-    // Remove quotes if LLM added them
-    let summary = resp.response.trim();
-    let summary = summary.trim_matches('"').trim_matches('\'').trim();
+    // Remove quotes if LLM added them (both single and double quotes)
+    let mut summary = resp.response.trim().to_string();
+    // Remove surrounding quotes
+    while (summary.starts_with('"') && summary.ends_with('"')) || 
+          (summary.starts_with('\'') && summary.ends_with('\'')) {
+        summary = summary[1..summary.len()-1].trim().to_string();
+    }
     
-    Ok(summary.to_owned())
+    Ok(summary)
 }
 
 fn default_summary(commits: &[String]) -> String {
