@@ -1,5 +1,4 @@
-use anyhow::{Context, Result, bail};
-use chrono::NaiveTime;
+use anyhow::{bail, Context, Result};
 use chrono_tz::Tz;
 use dirs::config_dir;
 use serde::Deserialize;
@@ -32,8 +31,6 @@ pub struct General {
 
 #[derive(Debug, Deserialize)]
 pub struct Daily {
-    #[serde(default)]
-    pub run_time: Option<String>,
     #[serde(default = "default_output_dir")]
     pub output_dir: String,
     #[serde(default)]
@@ -98,9 +95,6 @@ impl Config {
         }
 
         validate_working_days(&self.general.working_days)?;
-        if let Some(ref rt) = self.daily.run_time {
-            parse_time(rt)?;
-        }
         validate_output_dir(&self.daily.output_dir)?;
         validate_repo_path(&self.git.repo_path)?;
 
@@ -182,7 +176,6 @@ impl Default for General {
 impl Default for Daily {
     fn default() -> Self {
         Self {
-            run_time: None,
             output_dir: default_output_dir(),
             overwrite_existing: false,
         }
@@ -248,11 +241,6 @@ fn default_export_format() -> String {
 
 const DEFAULT_EXPORT_FREQUENCY: &str = "monthly";
 const DEFAULT_EXPORT_FORMAT: &str = "md";
-
-pub(crate) fn parse_time(input: &str) -> Result<NaiveTime> {
-    NaiveTime::parse_from_str(input, "%H:%M")
-        .with_context(|| format!("invalid run_time format: expected HH:MM, got {input}"))
-}
 
 fn validate_working_days(days: &[String]) -> Result<()> {
     for day in days {
