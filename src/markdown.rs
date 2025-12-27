@@ -12,11 +12,10 @@ pub fn write_daily_entry(
     commits: &[String],
 ) -> Result<PathBuf> {
     let path = shellexpand::tilde(&config.output_dir).into_owned();
-    let mut dir = PathBuf::from(&path);
-    dir.push(format!("{}", date.year()));
+    let dir = PathBuf::from(&path);
     fs::create_dir_all(&dir).with_context(|| format!("failed to create {}", dir.display()))?;
 
-    let file_path = dir.join(format!("{:04}-{:02}.md", date.year(), date.month()));
+    let file_path = dir.join(format!("{}.md", date.year()));
     let file_exists = file_path.exists();
 
     if !config.overwrite_existing && entry_exists(&file_path, date)? {
@@ -35,7 +34,7 @@ pub fn write_daily_entry(
         .with_context(|| format!("failed to open {}", file_path.display()))?;
 
     if !file_exists {
-        write_month_header(&mut file, date)?;
+        write_year_header(&mut file, date)?;
     }
 
     write_entry(&mut file, date, summary, commits)?;
@@ -55,20 +54,17 @@ fn entry_exists(path: &PathBuf, date: NaiveDate) -> Result<bool> {
     Ok(contents.contains(&format!("## [[{date}]]")))
 }
 
-fn write_month_header<W: Write>(mut writer: W, date: NaiveDate) -> Result<()> {
+fn write_year_header<W: Write>(mut writer: W, date: NaiveDate) -> Result<()> {
     writeln!(
         writer,
         r#"---
 type: devlog
 year: {year}
-month: {month}
 ---
 
-# Dev Log – {year} {month_name}
+# Dev Log – {year}
 "#,
         year = date.year(),
-        month = date.month(),
-        month_name = date.format("%B"),
     )?;
     Ok(())
 }
