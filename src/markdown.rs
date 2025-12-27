@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use chrono::{Datelike, NaiveDate};
 use std::fs::{self, OpenOptions};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 pub fn write_daily_entry(
     config: &Daily,
