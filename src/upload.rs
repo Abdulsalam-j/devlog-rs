@@ -1,6 +1,5 @@
 use crate::config::Drive;
 use anyhow::{bail, Context, Result};
-use chrono::Datelike;
 use std::path::PathBuf;
 use std::process::Command;
 

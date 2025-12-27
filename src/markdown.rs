@@ -1,9 +1,9 @@
 use crate::config::Daily;
 use anyhow::{Context, Result};
 use chrono::{Datelike, NaiveDate};
-use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Seek, Write};
-use std::path::{Path, PathBuf};
+use std::fs::{self, OpenOptions};
+use std::io::{Read, Write};
+use std::path::PathBuf;
 
 pub fn write_daily_entry(
     config: &Daily,
@@ -139,126 +139,6 @@ fn remove_entry(path: &PathBuf, date: NaiveDate) -> Result<()> {
     }
 
     Ok(())
-}
-
-pub fn collect_entries_in_range(
-    output_dir: &str,
-    start: NaiveDate,
-    end: NaiveDate,
-) -> Result<Vec<(NaiveDate, String)>> {
-    let root = PathBuf::from(shellexpand::tilde(output_dir).into_owned());
-    if !root.exists() {
-        return Ok(Vec::new());
-    }
-
-    let mut entries = Vec::new();
-    visit_md_files(&root, &mut |path| -> Result<()> {
-        let file_entries = parse_file_entries(path, start, end)?;
-        entries.extend(file_entries);
-        Ok(())
-    })?;
-
-    entries.sort_by_key(|(date, _)| *date);
-    Ok(entries)
-}
-
-pub fn write_export(
-    output_dir: &str,
-    start: NaiveDate,
-    end: NaiveDate,
-    entries: &[(NaiveDate, String)],
-) -> Result<PathBuf> {
-    let root = PathBuf::from(shellexpand::tilde(output_dir).into_owned());
-    let export_dir = root.join("exports");
-    fs::create_dir_all(&export_dir)
-        .with_context(|| format!("failed to create {}", export_dir.display()))?;
-
-    // Use year from the end date (current year)
-    let year = end.year();
-    let export_path = export_dir.join(format!("DevLog-{}.md", year));
-    let mut file = File::create(&export_path)
-        .with_context(|| format!("failed to create {}", export_path.display()))?;
-
-    writeln!(file, "# Dev Log Export\n\nRange: {start} to {end}\n\n---\n")?;
-
-    for (_, content) in entries {
-        writeln!(file, "{content}\n")?;
-    }
-
-    Ok(export_path)
-}
-
-fn visit_md_files(dir: &Path, f: &mut dyn FnMut(&Path) -> Result<()>) -> Result<()> {
-    if dir.is_file() {
-        if dir.extension().and_then(|s| s.to_str()) == Some("md") {
-            f(dir)?;
-        }
-        return Ok(());
-    }
-
-    for entry in fs::read_dir(dir).with_context(|| format!("failed to read {}", dir.display()))? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() {
-            visit_md_files(&path, f)?;
-        } else if path.extension().and_then(|s| s.to_str()) == Some("md") {
-            f(&path)?;
-        }
-    }
-    Ok(())
-}
-
-fn parse_file_entries(
-    path: &Path,
-    start: NaiveDate,
-    end: NaiveDate,
-) -> Result<Vec<(NaiveDate, String)>> {
-    let contents =
-        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
-
-    let mut results = Vec::new();
-    let mut current_date: Option<NaiveDate> = None;
-    let mut buffer = String::new();
-
-    for line in contents.lines() {
-        if let Some(date) = parse_entry_header(line) {
-            if let Some(d) = current_date {
-                if is_in_range(d, start, end) {
-                    results.push((d, buffer.clone()));
-                }
-            }
-            current_date = Some(date);
-            buffer.clear();
-            buffer.push_str(line);
-            buffer.push('\n');
-        } else if current_date.is_some() {
-            buffer.push_str(line);
-            buffer.push('\n');
-        }
-    }
-
-    if let Some(d) = current_date {
-        if is_in_range(d, start, end) {
-            results.push((d, buffer));
-        }
-    }
-
-    Ok(results)
-}
-
-fn parse_entry_header(line: &str) -> Option<NaiveDate> {
-    if let Some(rest) = line.strip_prefix("## [[") {
-        if let Some(date_str) = rest.strip_suffix("]]") {
-            if let Ok(date) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-                return Some(date);
-            }
-        }
-    }
-    None
-}
-
-fn is_in_range(date: NaiveDate, start: NaiveDate, end: NaiveDate) -> bool {
-    date >= start && date <= end
 }
 
 fn write_entry<W: Write>(

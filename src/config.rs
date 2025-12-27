@@ -15,8 +15,6 @@ pub struct Config {
     #[serde(default)]
     pub llm: Llm,
     #[serde(default)]
-    pub export: Export,
-    #[serde(default)]
     pub drive: Drive,
 }
 
@@ -46,15 +44,6 @@ pub struct Llm {
     pub use_emoji: bool,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Export {
-    #[serde(default)]
-    pub enabled: bool,
-    #[serde(default)]
-    pub frequency: Option<String>,
-    #[serde(default)]
-    pub format: Option<String>,
-}
 
 #[derive(Debug, Deserialize)]
 pub struct Drive {
@@ -100,10 +89,6 @@ impl Config {
 
         if self.llm.enabled && self.llm.model.trim().is_empty() {
             bail!("llm.model cannot be empty when llm.enabled = true");
-        }
-
-        if self.export.enabled {
-            validate_export(&self.export)?;
         }
 
         Ok(())
@@ -172,16 +157,6 @@ impl Default for Llm {
     }
 }
 
-impl Default for Export {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            frequency: Some(default_export_frequency()),
-            format: Some(default_export_format()),
-        }
-    }
-}
-
 impl Default for Drive {
     fn default() -> Self {
         Self {
@@ -199,37 +174,6 @@ fn default_drive_remote() -> String {
 fn default_drive_folder() -> String {
     "DevLog".into()
 }
-
-fn validate_export(export: &Export) -> Result<()> {
-    let frequency = export
-        .frequency
-        .as_deref()
-        .unwrap_or(DEFAULT_EXPORT_FREQUENCY);
-    let format = export.format.as_deref().unwrap_or(DEFAULT_EXPORT_FORMAT);
-
-    match frequency {
-        "weekly" | "monthly" => {}
-        other => bail!("export.frequency must be 'weekly' or 'monthly', got {other}"),
-    }
-
-    match format {
-        "md" | "pdf" => {}
-        other => bail!("export.format must be 'md' or 'pdf', got {other}"),
-    }
-
-    Ok(())
-}
-
-fn default_export_frequency() -> String {
-    DEFAULT_EXPORT_FREQUENCY.to_string()
-}
-
-fn default_export_format() -> String {
-    DEFAULT_EXPORT_FORMAT.to_string()
-}
-
-const DEFAULT_EXPORT_FREQUENCY: &str = "monthly";
-const DEFAULT_EXPORT_FORMAT: &str = "md";
 
 fn validate_output_dir(dir: &str) -> Result<()> {
     if dir.trim().is_empty() {

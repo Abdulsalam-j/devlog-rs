@@ -1,6 +1,5 @@
 mod config;
 mod daily;
-mod export;
 mod git;
 mod llm;
 mod markdown;
