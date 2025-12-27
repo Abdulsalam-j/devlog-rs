@@ -24,7 +24,7 @@ pub fn summarize_if_enabled(config: &Llm, commits: &[String]) -> Result<String> 
 
 fn summarize(config: &Llm, commits: &[String]) -> Result<String> {
     let prompt = format!(
-        "Summarize these commit messages into one concise sentence. \
+        "Summarize these commit messages into one concise sentence starting with 'Today I'. \
 Only mention what is explicitly stated in the commits. Do not add details or context that is not in the commit messages. \
 Be factual and direct. Use at most one emoji{}.\n\n{}",
         if config.use_emoji {
