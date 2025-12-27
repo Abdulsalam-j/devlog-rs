@@ -18,6 +18,22 @@
 
 ### Installation
 
+**Option 1: Quick Install Script (Recommended)**
+
+```bash
+# Clone the repository
+git clone https://github.com/Abdulsalam-j/devlog-rs.git
+cd devlog-rs
+
+# Run install script
+./install.sh
+
+# Verify installation
+devlog --help
+```
+
+**Option 2: Manual Install**
+
 ```bash
 # Clone the repository
 git clone https://github.com/Abdulsalam-j/devlog-rs.git
@@ -31,6 +47,11 @@ devlog --help
 ```
 
 **That's it!** Now you can run `devlog log` from anywhere in your terminal.
+
+> **Note:** Make sure `~/.cargo/bin` is in your PATH. If `devlog` command is not found, add this to your `~/.zshrc` or `~/.bashrc`:
+> ```bash
+> export PATH="$HOME/.cargo/bin:$PATH"
+> ```
 
 ### First-Time Setup
 
