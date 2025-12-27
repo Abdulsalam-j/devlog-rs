@@ -56,6 +56,8 @@ Be factual and direct. Use at most one emoji{}.\n\n{}",
           (summary.starts_with('\'') && summary.ends_with('\'')) {
         summary = summary[1..summary.len()-1].trim().to_string();
     }
+    // Also remove any trailing quotes that might be left
+    summary = summary.trim_end_matches('"').trim_end_matches('\'').trim().to_string();
     
     Ok(summary)
 }
