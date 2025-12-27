@@ -4,9 +4,8 @@ use anyhow::{bail, Context, Result};
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use chrono_tz::Tz;
 use std::path::PathBuf;
-use std::process::Command;
 
-/// Exports devlog entries to PDF and returns the PDF path if successful.
+/// Exports devlog entries and returns the export path for upload.
 pub fn run(config: &Config, tz: Tz) -> Result<Option<PathBuf>> {
     if !config.export.enabled {
         println!("Export disabled in configuration, skipping.");
@@ -32,40 +31,6 @@ pub fn run(config: &Config, tz: Tz) -> Result<Option<PathBuf>> {
     }
 
     let export_path = markdown::write_export(&config.daily.output_dir, start, end, &entries)?;
-    let format = config.export.format.as_deref().unwrap_or("md");
-
-    if format == "pdf" {
-        match render_pdf(&export_path) {
-            Ok(pdf_path) => {
-                println!("PDF written to {}", pdf_path.display());
-                return Ok(Some(pdf_path));
-            }
-            Err(err) => {
-                eprintln!(
-                    "PDF export failed: {err}. Markdown export remains at {}.",
-                    export_path.display()
-                );
-            }
-        }
-    }
-
     println!("Export written to {}", export_path.display());
-    Ok(None)
-}
-
-fn render_pdf(markdown_path: &PathBuf) -> Result<PathBuf> {
-    let pdf_path = markdown_path.with_extension("pdf");
-    let status = Command::new("pandoc")
-        .arg(markdown_path.as_os_str())
-        .arg("-o")
-        .arg(&pdf_path)
-        .arg("--pdf-engine=typst")
-        .status()
-        .with_context(|| "failed to invoke pandoc")?;
-
-    if !status.success() {
-        bail!("pandoc PDF export failed with status {:?}", status.code());
-    }
-
-    Ok(pdf_path)
+    Ok(Some(export_path))
 }
