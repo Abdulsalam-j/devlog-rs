@@ -24,7 +24,7 @@ pub struct Daily {
     pub output_dir: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct Git {
     #[serde(default)]
     pub repo_path: Option<String>,
@@ -135,14 +135,6 @@ impl Default for Daily {
     }
 }
 
-impl Default for Git {
-    fn default() -> Self {
-        Self {
-            repo_path: None,
-            author: None,
-        }
-    }
-}
 
 impl Default for Llm {
     fn default() -> Self {
