@@ -130,7 +130,9 @@ pub fn write_export(
     fs::create_dir_all(&export_dir)
         .with_context(|| format!("failed to create {}", export_dir.display()))?;
 
-    let export_path = export_dir.join(format!("devlog-export-{start}-to-{end}.md"));
+    // Use year from the end date (current year)
+    let year = end.year();
+    let export_path = export_dir.join(format!("DevLog-{}.md", year));
     let mut file = File::create(&export_path)
         .with_context(|| format!("failed to create {}", export_path.display()))?;
 
