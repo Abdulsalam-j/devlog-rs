@@ -2,7 +2,7 @@ use crate::config::Daily;
 use anyhow::{Context, Result};
 use chrono::{Datelike, NaiveDate};
 use std::fs::{self, File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
 
 pub fn write_daily_entry(
@@ -35,6 +35,9 @@ pub fn write_daily_entry(
 
     if !file_exists {
         write_year_header(&mut file, date)?;
+    } else {
+        // Always add a blank line before new entry for proper spacing
+        writeln!(file)?;
     }
 
     write_entry(&mut file, date, summary, commits)?;
@@ -112,14 +115,23 @@ fn remove_entry(path: &PathBuf, date: NaiveDate) -> Result<()> {
         
         let end = next_idx.unwrap_or_else(|| contents.len());
         
-        // Remove the entry (including leading newline if present)
-        let remove_start = if start > 0 && contents.as_bytes()[start - 1] == b'\n' {
-            start - 1
+        // Remove the entry, preserving proper spacing
+        // Remove from start of entry to end, but keep trailing newlines if next entry exists
+        let remove_start = start;
+        let remove_end = if next_idx.is_some() {
+            // If there's a next entry, remove up to but keep one newline before it
+            end
         } else {
-            start
+            // If this is the last entry, remove everything including trailing newlines
+            end
         };
         
-        contents.replace_range(remove_start..end, "");
+        contents.replace_range(remove_start..remove_end, "");
+        
+        // Ensure file ends with proper spacing if we removed the last entry
+        if next_idx.is_none() && !contents.ends_with('\n') && !contents.is_empty() {
+            contents.push('\n');
+        }
 
         // Rewrite file with truncated contents
         fs::write(path, contents)
