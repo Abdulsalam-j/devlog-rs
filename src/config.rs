@@ -32,8 +32,8 @@ pub struct General {
 
 #[derive(Debug, Deserialize)]
 pub struct Daily {
-    #[serde(default = "default_run_time")]
-    pub run_time: String,
+    #[serde(default)]
+    pub run_time: Option<String>,
     #[serde(default = "default_output_dir")]
     pub output_dir: String,
     #[serde(default)]
@@ -98,7 +98,9 @@ impl Config {
         }
 
         validate_working_days(&self.general.working_days)?;
-        parse_time(&self.daily.run_time)?;
+        if let Some(ref rt) = self.daily.run_time {
+            parse_time(rt)?;
+        }
         validate_output_dir(&self.daily.output_dir)?;
         validate_repo_path(&self.git.repo_path)?;
 
@@ -156,10 +158,6 @@ fn default_working_days() -> Vec<String> {
     ]
 }
 
-fn default_run_time() -> String {
-    "18:00".into()
-}
-
 fn default_output_dir() -> String {
     "./DevLog".into()
 }
@@ -184,7 +182,7 @@ impl Default for General {
 impl Default for Daily {
     fn default() -> Self {
         Self {
-            run_time: default_run_time(),
+            run_time: None,
             output_dir: default_output_dir(),
             overwrite_existing: false,
         }
