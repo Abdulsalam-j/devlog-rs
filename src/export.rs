@@ -59,29 +59,12 @@ fn render_pdf(markdown_path: &PathBuf) -> Result<PathBuf> {
         .arg(markdown_path.as_os_str())
         .arg("-o")
         .arg(&pdf_path)
-        .arg("--pdf-engine=typst") // Use typst if available, falls back to error
-        .status();
+        .arg("--pdf-engine=typst")
+        .status()
+        .with_context(|| "failed to invoke pandoc")?;
 
-    // Try with typst first, if that fails try without pdf-engine flag (uses default)
-    if status.is_err() || !status.as_ref().unwrap().success() {
-        // Fallback: try HTML to PDF via wkhtmltopdf or weasyprint
-        let html_path = markdown_path.with_extension("html");
-        let html_status = Command::new("pandoc")
-            .arg(markdown_path.as_os_str())
-            .arg("-o")
-            .arg(&html_path)
-            .arg("-s")
-            .arg("--metadata")
-            .arg("title=DevLog Export")
-            .status()
-            .with_context(|| "failed to invoke pandoc")?;
-
-        if !html_status.success() {
-            bail!("pandoc HTML export failed");
-        }
-
-        println!("HTML written to {}", html_path.display());
-        return Ok(html_path);
+    if !status.success() {
+        bail!("pandoc PDF export failed with status {:?}", status.code());
     }
 
     Ok(pdf_path)
