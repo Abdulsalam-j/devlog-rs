@@ -1,7 +1,11 @@
 [package]
 name = "devlog-rs"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+
+[[bin]]
+name = "devlog"
+path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
