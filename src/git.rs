@@ -15,6 +15,7 @@ pub fn fetch_commits(config: &Git, date: NaiveDate) -> Result<Vec<String>> {
     let mut cmd = Command::new("git");
     cmd.arg("-C").arg(repo);
     cmd.arg("log");
+    cmd.arg("--all");
     cmd.arg(format!("--since={since}"));
     cmd.arg(format!("--until={until}"));
     if let Some(author) = &config.author {
