@@ -1,8 +1,10 @@
 use crate::config::Llm;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use reqwest::blocking::Client;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
+
+const OLLAMA_URL: &str = "http://localhost:11434/api/generate";
 
 pub fn summarize_if_enabled(config: &Llm, commits: &[String]) -> Result<String> {
     if commits.is_empty() {
@@ -16,10 +18,26 @@ pub fn summarize_if_enabled(config: &Llm, commits: &[String]) -> Result<String> 
     match summarize(config, commits) {
         Ok(summary) => Ok(summary),
         Err(err) => {
-            eprintln!("LLM summary failed: {err}. Falling back to simple summary.");
+            let hint = llm_error_hint(&err);
+            eprintln!("LLM summary failed: {err}.{hint}");
+            eprintln!("Falling back to simple summary.");
             Ok(default_summary(commits))
         }
     }
+}
+
+fn llm_error_hint(err: &anyhow::Error) -> String {
+    let s = err.to_string();
+    if s.contains("connection refused") || s.contains("Connection refused") {
+        return " Make sure Ollama is running: run `ollama serve` in another terminal.".into();
+    }
+    if s.contains("timed out") || s.contains("Timeout") {
+        return " Try increasing [llm] timeout_secs in devlog.toml (default 120).".into();
+    }
+    if s.contains("model") && (s.contains("not found") || s.contains("does not exist") || s.contains("404")) {
+        return " Pull the model first: run `ollama pull <model>` (e.g. ollama pull llama3).".into();
+    }
+    String::new()
 }
 
 fn summarize(config: &Llm, commits: &[String]) -> Result<String> {
@@ -41,16 +59,23 @@ Be factual and direct. Use at most one emoji{}.\n\n{}",
         stream: false,
     };
 
-    let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
+    let timeout = Duration::from_secs(config.timeout_secs);
+    let client = Client::builder().timeout(timeout).build()?;
 
     let resp: OllamaResponse = client
-        .post("http://localhost:11434/api/generate")
+        .post(OLLAMA_URL)
         .json(&body)
-        .send()?
-        .json()?;
+        .send()
+        .with_context(|| format!("Failed to reach Ollama at {OLLAMA_URL}. Is Ollama running?"))?
+        .json()
+        .with_context(|| "Invalid response from Ollama. Check that the model is pulled (e.g. ollama pull llama3).")?;
 
-    // Remove quotes if LLM added them (both single and double quotes)
-    let mut summary = resp.response.trim().to_string();
+    if let Some(ref err_msg) = resp.error {
+        anyhow::bail!("Ollama error: {err_msg}");
+    }
+
+    let raw = resp.response.as_deref().unwrap_or("").trim();
+    let mut summary = raw.to_string();
     // Remove surrounding quotes
     while (summary.starts_with('"') && summary.ends_with('"')) || 
           (summary.starts_with('\'') && summary.ends_with('\'')) {
@@ -58,7 +83,10 @@ Be factual and direct. Use at most one emoji{}.\n\n{}",
     }
     // Also remove any trailing quotes that might be left
     summary = summary.trim_end_matches('"').trim_end_matches('\'').trim().to_string();
-    
+
+    if summary.is_empty() {
+        return Ok(default_summary(commits));
+    }
     Ok(summary)
 }
 
@@ -76,7 +104,10 @@ struct OllamaRequest<'a> {
     stream: bool,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize)]
 struct OllamaResponse {
-    response: String,
+    #[serde(default)]
+    response: Option<String>,
+    #[serde(default)]
+    error: Option<String>,
 }

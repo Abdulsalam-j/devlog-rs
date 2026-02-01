@@ -40,6 +40,9 @@ pub struct Llm {
     pub model: String,
     #[serde(default = "default_use_emoji")]
     pub use_emoji: bool,
+    /// Timeout in seconds for Ollama API calls (default 120 for local inference).
+    #[serde(default = "default_llm_timeout_secs")]
+    pub timeout_secs: u64,
 }
 
 
@@ -127,6 +130,10 @@ fn default_use_emoji() -> bool {
     true
 }
 
+fn default_llm_timeout_secs() -> u64 {
+    120
+}
+
 impl Default for Daily {
     fn default() -> Self {
         Self {
@@ -142,6 +149,7 @@ impl Default for Llm {
             enabled: false,
             model: default_model(),
             use_emoji: default_use_emoji(),
+            timeout_secs: default_llm_timeout_secs(),
         }
     }
 }

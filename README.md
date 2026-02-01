@@ -79,6 +79,7 @@ author = "your.email@example.com"
 enabled = true
 model = "llama3"
 use_emoji = true
+timeout_secs = 120        # Optional: seconds to wait for Ollama (default 120)
 
 [drive]
 enabled = true
@@ -186,7 +187,13 @@ author = "your.email@example.com"          # Filter commits by author email
 enabled = true          # Enable AI summaries
 model = "llama3"        # Ollama model name
 use_emoji = true        # Include emoji in summaries
+timeout_secs = 120      # Optional: seconds to wait for Ollama (default 120)
 ```
+
+If LLM fails, devlog prints a hint and falls back to a simple summary. Common fixes:
+- **Connection refused**: Start Ollama with `ollama serve`.
+- **Timeout**: Increase `timeout_secs` in devlog.toml (local models can be slow on first run).
+- **Model not found**: Pull the model with `ollama pull llama3` (or your configured model).
 
 **Available Models:**
 - `llama3` (recommended, ~4.7GB)
